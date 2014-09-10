@@ -12,18 +12,48 @@ maintainer:          jkarni@gmail.com
 -- copyright:           
 category:            Text
 build-type:          Simple
-extra-source-files:  
+extra-source-files:  LICENSE
+data-files:          example.yaml
 cabal-version:       >=1.10
 
-executable garnett
-  main-is:             Main.hs
+
+library
   hs-source-dirs:      ., src
-  -- other-modules:       
-  -- other-extensions:    
+  exposed-modules:     Text.Garnett.Definition
+                     , Text.Garnett.BashWriter
   build-depends:       base >=4.7 && <4.8
                      , containers
                      , yaml==0.8.*
                      , wl-pprint-extras==3.* 
                      , lens==4.4.*
+                     , text==0.11.*
+                     , bytestring==0.10.*
+                     , aeson==0.6.2.1
+                     , unordered-containers==0.2.*
+  -- hs-source-dirs:      
+  default-language:    Haskell2010
+
+executable garnett
+  main-is:             Main.hs
+  hs-source-dirs:      .
+  -- other-modules:       
+  -- other-extensions:    
+  build-depends:       base >=4.7 && <4.8
+                     , garnett
+  -- hs-source-dirs:      
+  default-language:    Haskell2010
+
+executable Tests
+  main-is:             Tests.hs
+  hs-source-dirs:      tests
+  -- other-modules:       
+  -- other-extensions:    
+  build-depends:       base >=4.7 && <4.8
+                     , containers
+                     , bytestring
+                     , garnett
+                     , aeson
+                     , yaml
+                     , hspec
   -- hs-source-dirs:      
   default-language:    Haskell2010

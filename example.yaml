@@ -1,0 +1,40 @@
+# Example Garnett file
+prog-name: SampleProg
+author: Julian K. Arni
+email: jkarni@gmail.com
+parsers:
+    - name: main
+      intro:
+          default: A sample Garnett program
+          man: >
+              A sample Garnett program. Does nothing, but accepts many options.
+      options:
+          - name: verbosity  # Name of field option gets stored in
+            short: v
+            long: verbose
+            description: 
+               default: Print output verbosely
+          - name: help
+            short: h
+            long: help
+            description:
+              default: Print help message and exit
+              cli: Print this help message and exit
+          - name: inputFile
+            short: i
+            long: input
+            input: file
+            description:
+              default: Input file
+              man: Takes an input file and does absolutely nothing with it
+          - name: logLevel
+            short: l
+            long: log
+            arg: int
+            description: 
+              default: Set the log level 
+              man: >
+                  Sets the log level. Currently supported levels x are 0 <= x <= 5.
+                  Larger numbers will be treated as 5.
+      see-also: >
+          The project's github page.

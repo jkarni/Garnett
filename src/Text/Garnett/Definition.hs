@@ -12,6 +12,7 @@ module Text.Garnett.Definition where
 import GHC.Generics
 import Data.Monoid
 import Data.Yaml
+import Data.Maybe
 import Data.Aeson
 import qualified Data.Text as T
 import Data.Monoid
@@ -51,7 +52,7 @@ data Option =
            , _longOpt  :: Maybe T.Text
            , _input    :: Maybe OptionInputTy
            , _optName  :: T.Text  -- ^ field name of option in parsed result
-           , _optDesc  :: Maybe T.Text
+           , _optDesc  :: Maybe (FmtMap T.Text)
            } deriving (Show)
 $(makeLenses ''Option)
 
@@ -74,7 +75,9 @@ data Markup = Markup T.Text deriving (Generic)
 
 -- | Class for things that can create themselves from a Garnett.
 class GarnettWriter a where
+    fmt :: a -> Fmt
     fromGarnett :: GarnettFile -> Doc a
+
 
 --------------------------------------------------------------------------
 -- Instances
@@ -100,25 +103,25 @@ instance FromJSON OptionInputTy where
 
 
 instance FromJSON Option where
-    parseJSON (Object v) = Option <$> v .: "short"
-                                  <*> v .: "long"
-                                  <*> v .: "input"
+    parseJSON (Object v) = Option <$> v .:? "short"
+                                  <*> v .:? "long"
+                                  <*> v .:? "input"
                                   <*> v .: "name"
-                                  <*> v .: "description"
+                                  <*> v .:? "description"
     parseJSON _ = mzero
 
 instance FromJSON GParser where
     parseJSON (Object v) = GParser <$> v .: "name"
                                    <*> v .: "options"
-                                   <*> v .: "intro"
-                                   <*> v .: "see-also"
+                                   <*> v .:? "intro"
+                                   <*> v .:? "see-also"
     parseJSON _ = mzero
 
 instance FromJSON GarnettFile where
     parseJSON (Object v) = GarnettFile <$> v .: "prog-name"
-                                 <*> v .: "author"
-                                 <*> v .: "email"
-                                 <*> v .: "parsers"
+                                       <*> v .: "author"
+                                       <*> v .:? "email"
+                                       <*> v .: "parsers"
     parseJSON _ = mzero
 
 --------------------------------------------------------------------------
@@ -127,3 +130,11 @@ instance FromJSON GarnettFile where
 defaultFmt :: Fmt
 defaultFmt = Fmt "default"
 
+lkup :: (GarnettWriter w) => w -> FmtMap a -> Maybe a
+lkup w = Map.lookup (fmt w)
+
+getShortCompls :: GParser -> [Char]
+getShortCompls p = catMaybes $ (p ^. options) ^.. folded . shortOpt
+
+getLongCompls :: GParser -> [T.Text]
+getLongCompls p = catMaybes $ (p ^. options) ^.. folded . longOpt

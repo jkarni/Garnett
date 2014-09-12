@@ -5,11 +5,12 @@ import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy as BS
 import Data.Yaml
 import Data.Aeson
+import Data.Maybe
 import Data.Either
 import Test.Hspec
 
 import Text.Garnett.Definition
---import Text.Garnett.BashWriter
+import Text.Garnett.BashWriter
 import Paths_garnett
 
 
@@ -20,11 +21,17 @@ main = hspec $ do
             ex <- decodeGFile "example.yaml"
             isRight ex `shouldBe` True
 
+printBash :: FilePath -> IO ()
+printBash fp = do
+       f <- decodeGFile fp
+       case f of
+           Left exc -> print exc
+           Right gf -> print $ allBash gf
 
-decodeGFile :: FilePath -> IO (Either String GarnettFile)
+decodeGFile :: FilePath -> IO (Either ParseException GarnettFile)
 decodeGFile fp = do
         fp' <- getDataFileName fp
-        liftM eitherDecode $ BS.readFile fp'
+        decodeFileEither fp'
 
 {-
 defaultBlock = Block { _progName    = Map.fromList [(defaultFmt, "test")]

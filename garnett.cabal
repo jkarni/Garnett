@@ -4,7 +4,12 @@
 name:                garnett
 version:             0.1.0.0
 -- synopsis:            
--- description:         
+description:         
+    Generates option parsing code, along with usage, completion and man pages,
+    from a simple YAML file.
+
+    Tries to make the generated code readable in case manual changes are
+    necessary.
 license:             BSD3
 license-file:        LICENSE
 author:              Julian K. Arni

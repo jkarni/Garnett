@@ -1,12 +1,21 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{- |
+    Module : Text.Garnett.Definition
+    Copyright : Copyright (C) 2014 Julian K. Arni
+    License : BSD3
+    Maintainer : Julian K. Arni <jkarni@gmail.com
+    Stability : alpha
+
+The internal data types definitions.
+-}
 module Text.Garnett.Definition where
 
 import GHC.Generics
@@ -24,6 +33,7 @@ import Control.Lens.At
 import qualified Data.Map as Map
 import qualified Data.HashMap.Strict as H
 import Text.PrettyPrint.Free
+import GHC.TypeLits
 
 --------------------------------------------------------------------------
 -- Types
@@ -43,16 +53,23 @@ data OptionInputTy = OITInt
                    | OITString
                    | OITFile
                    | OITDir
+                   | OIBool
                    | OITList OptionInputTy
                    deriving (Show, Eq)
 
+
 -- | An option.
+-- TODO: Add default values.
+-- TODO: Currently the number of inputs is fixed. Accept
+--       a possibly-variable (and possibly infinite) number of inputs
 data Option =
-    Option { _shortOpt :: Maybe Char
-           , _longOpt  :: Maybe T.Text
-           , _input    :: Maybe OptionInputTy
-           , _optName  :: T.Text  -- ^ field name of option in parsed result
-           , _optDesc  :: Maybe (FmtMap T.Text)
+    Option { _shortOpt    :: Maybe Char
+           , _longOpt     :: Maybe T.Text
+           , _input       :: Maybe OptionInputTy
+           , _optName     :: T.Text  -- ^ field name of option in parsed result
+           , _optDesc     :: Maybe (FmtMap T.Text)
+           , _optMetavar  :: Maybe T.Text
+           , _optRequired :: Bool
            } deriving (Show)
 $(makeLenses ''Option)
 

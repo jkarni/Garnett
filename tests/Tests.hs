@@ -26,7 +26,7 @@ printBash fp = do
        f <- decodeGFile fp
        case f of
            Left exc -> print exc
-           Right gf -> print $ allBash gf
+           Right gf -> print $ toDoc $ allBash gf
 
 decodeGFile :: FilePath -> IO (Either ParseException GarnettFile)
 decodeGFile fp = do

@@ -31,6 +31,7 @@ library
                      , yaml==0.8.*
                      , wl-pprint-extras==3.* 
                      , lens==4.4.*
+                     , free==4.9.*
                      , text==0.11.*
                      , bytestring==0.10.*
                      , aeson==0.6.2.1

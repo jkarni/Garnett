@@ -69,7 +69,7 @@ data Option =
            , _optName     :: T.Text  -- ^ field name of option in parsed result
            , _optDesc     :: Maybe (FmtMap T.Text)
            , _optMetavar  :: Maybe T.Text
-           , _optRequired :: Bool
+           , _optRequired :: Maybe Bool   -- ^ default 'False'
            } deriving (Show)
 $(makeLenses ''Option)
 
@@ -123,8 +123,10 @@ instance FromJSON Option where
     parseJSON (Object v) = Option <$> v .:? "short"
                                   <*> v .:? "long"
                                   <*> v .:? "input"
-                                  <*> v .: "name"
+                                  <*> v .:  "name"
                                   <*> v .:? "description"
+                                  <*> v .:? "metavar"
+                                  <*> v .:? "required"
     parseJSON _ = mzero
 
 instance FromJSON GParser where

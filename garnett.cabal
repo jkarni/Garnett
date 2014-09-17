@@ -25,7 +25,11 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      ., src
   exposed-modules:     Text.Garnett.Definition
-                     , Text.Garnett.BashWriter
+                     , Text.Garnett.Completers.BashCompleter
+                     , Text.Garnett.Completers.ZshCompleter
+                     , Text.Garnett.Completers.ShellDSL
+                     , Text.Garnett.Writers.HaskellWriter
+                     , Text.Garnett.Writers.PythonWriter
   build-depends:       base >=4.7 && <4.8
                      , containers
                      , yaml==0.8.*

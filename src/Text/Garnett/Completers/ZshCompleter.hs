@@ -26,10 +26,11 @@ data ZshArg = ZshArg { exclude :: [String]
                      , action  :: String
                      }
 
+{-
 -- | Turn a ZshArg into a zsh _arguments() syntax.
 -- TODO: This should be cleaner
-toArgs :: ZshArg -> String
-toArgs zArg = ('(':exc ++ ")") ++ addDash (optVar zArg) ++ n
+toArgsStr :: ZshArg -> String
+toArgsStr zArg = ('(':exc ++ ")") ++ addDash (optVar zArg) ++ n
             ++ ('[':(optHelp zArg) ++ "]") ++ (':':(hint zArg)++ ":")
             ++ action zArg
     where addDash a@(_:[]) = '-':a
@@ -37,6 +38,19 @@ toArgs zArg = ('(':exc ++ ")") ++ addDash (optVar zArg) ++ n
           exc = concat $ intersperse " " (fmap addDash $ exclude zArg)
           n = if nArgs zArg > 0 then "+" else ""
 
+-- | Return a tuple with (Maybe) the short option and (Maybe) the long
+-- option (as a ZshArg)
+getZshArgs :: Option -> (Maybe ZshArg, Maybe ZshArg)
+getZshArgs opt = (mkZArg shortOpt, mkZArg longOpt)
+   where mkZArg typ = opt ^. typ >>= \x -> ZshArg { exclude = []   -- TODO
+                                                  , optVar  = x
+                                                  , optHelp = opt ^. optDesc
+                                                  , nArgs   = 1    -- TODO
+                                                  , hint    = ""
+                                                  , action  = ""
+                                                  }
+
+-}
 
 {-optionLn :: Option -> Free ShellF ()-}
 {-optionLn opt = do-}

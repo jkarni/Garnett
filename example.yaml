@@ -9,7 +9,7 @@ options:
     - name: verbosity  # Name of field option gets stored in
       short: v
       long: verbose
-      description: 
+      description:
         default: something
     - name: help
       short: h
@@ -28,21 +28,21 @@ options:
       short: l
       long: log
       arg: int
-      description: 
-        default: Set the log level 
+      description:
+        default: Set the log level
         man: >
             Sets the log level. Currently supported levels x are 0 <= x <= 5.
             Larger numbers will be treated as 5.
 subparsers:
     - name: blame
-      intro: 
-          default: Blame someone 
+      intro:
+          default: Blame someone
       options:
           - name: first
             short: f
       subparsers:
           - name: fire-them
-            intro: 
+            intro:
                 default: fire the person
             options:
                 - name: verbosity

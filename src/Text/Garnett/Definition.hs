@@ -53,7 +53,7 @@ data OptionInputTy = OITInt
                    | OITString
                    | OITFile
                    | OITDir
-                   | OIBool
+                   | OITBool
                    | OITList OptionInputTy
                    deriving (Show, Eq)
 

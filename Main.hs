@@ -17,4 +17,5 @@ import Data.ByteString.Lazy as LBS hiding (writeFile, putStr, putStrLn)
 main :: IO ()
 main =
     decodeFileEither "example.yaml" >>=
-    putStrLn . (<> "\n---\n") . ("\n---\n" <>) . writer . either (error . show) id
+    writer . either (error . show) id >>=
+    putStrLn . (<> "\n---\n") . ("\n---\n" <>)

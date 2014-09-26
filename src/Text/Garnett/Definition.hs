@@ -154,6 +154,9 @@ instance FromJSON GarnettFile where
 defaultFmt :: Fmt
 defaultFmt = Fmt "default"
 
+-- | TODO: I don't get this.  @Fmt@ is not a @GarnettWriter@, so this
+-- function does not work for looking up option descriptions or
+-- intros.  What is it good for, then?
 lkup :: (GarnettWriter w) => w -> FmtMap a -> Maybe a
 lkup w = Map.lookup (fmt w)
 

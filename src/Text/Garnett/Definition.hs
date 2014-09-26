@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns           #-}
 {-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleInstances      #-}
@@ -31,6 +32,7 @@ import           Data.Monoid
 import           Data.Monoid
 import qualified Data.Text             as T
 import           Data.Yaml
+import           Data.Vector
 import           GHC.Generics
 import           GHC.TypeLits
 import           Text.PrettyPrint.Free
@@ -113,12 +115,8 @@ instance FromJSON OptionInputTy where
     parseJSON (String "file")      = pure OITFile
     parseJSON (String "dir")       = pure OITDir
     parseJSON (String "directory") = pure OITDir
-    parseJSON (String x)
-          | T.head x == '[' && T.last x == ']' = liftM OITList next
-          | otherwise                          = mzero
-      where next = parseJSON . String . T.init $ T.tail x
-    parseJSON _ = mzero
-
+    parseJSON (Array (toList -> [x])) = OITList <$> parseJSON x
+    parseJSON bad = error $ show bad
 
 instance FromJSON Option where
     parseJSON (Object v) = Option <$> v .:? "short"

@@ -49,7 +49,7 @@ buildType gparser = DataD [] dataName [] [RecC dataName fields] []
         g (Just OITFile) = ConT ''FilePath
         g (Just OITDir) = ConT ''FilePath
         g (Just OITBool) = ConT ''Bool
-        g (Just (OITList t)) = ListT  -- TODO
+        g (Just (OITList t)) = AppT ListT (g (Just t))
 
 
 buildFun :: GParser -> Dec

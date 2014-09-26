@@ -20,7 +20,7 @@ options:
     - name: inputFile
       short: i
       long: input
-      input: file
+      input: [file]
       description:
         default: Input file
         man: Takes an input file and does absolutely nothing with it

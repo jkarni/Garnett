@@ -41,6 +41,9 @@ library
                      , aeson==0.6.2.1 || ==0.8.*
                      , attoparsec==0.10.* || ==0.12.1.2
                      , unordered-containers==0.2.*
+                     , template-haskell==2.9.*
+                     , string-conversions==0.3.*
+                     , safe==0.3.*
   -- hs-source-dirs:
   default-language:    Haskell2010
 
@@ -51,6 +54,11 @@ executable garnett
   -- other-extensions:
   build-depends:       base >=4.7 && <4.8
                      , garnett
+                     , bytestring
+                     , aeson
+                     , safe
+                     , yaml
+                     , string-conversions
   -- hs-source-dirs:
   default-language:    Haskell2010
 

@@ -36,14 +36,14 @@ options:
 subparsers:
     - name: blame
       intro: 
-          - default: Blame someone 
+          default: Blame someone 
       options:
           - name: first
             short: f
       subparsers:
           - name: fire-them
             intro: 
-	        - default: fire the person
+                default: fire the person
             options:
                 - name: verbosity
                   short: v

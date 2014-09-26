@@ -135,7 +135,7 @@ instance FromJSON GParser where
                                    <*> v .: "options"
                                    <*> v .:? "intro"
                                    <*> v .:? "see-also"
-                                   <*> v .: "subparsers"
+                                   <*> v .:?  "subparsers" .!= []
     parseJSON _ = mzero
 
 instance FromJSON GarnettFile where
@@ -146,7 +146,7 @@ instance FromJSON GarnettFile where
                                                      <*> v .: "options"
                                                      <*> v .:  "intro"
                                                      <*> v .:? "see-also"
-                                                     <*> v .: "subparsers" 
+                                                     <*> v .:? "subparsers" .!= []
                                            )  
     parseJSON _ = mzero
 

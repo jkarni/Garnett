@@ -9,7 +9,8 @@ options:
     - name: verbosity  # Name of field option gets stored in
       short: v
       long: verbose
-      description: something
+      description: 
+        default: something
     - name: help
       short: h
       long: help
@@ -34,10 +35,15 @@ options:
             Larger numbers will be treated as 5.
 subparsers:
     - name: blame
-      intro: Blame someone 
+      intro: 
+          - default: Blame someone 
+      options:
+          - name: first
+            short: f
       subparsers:
           - name: fire-them
-            intro: fire the person
+            intro: 
+	        - default: fire the person
             options:
                 - name: verbosity
                   short: v
@@ -45,12 +51,6 @@ subparsers:
                 - name: curt
                   short: c
                   long: curt
-    - name: diff
-      intro: Diff files
-      options:
-          - name: first
-            short: f
-            long: first-file
 
 see-also: >
     The project's github page.

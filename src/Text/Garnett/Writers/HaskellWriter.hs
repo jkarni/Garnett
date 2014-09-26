@@ -1,4 +1,6 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE ViewPatterns         #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 {- |
     Module : Text.Garnett.Writers.HaskellWriter
     Copyright : Copyright (C) 2014 Julian K. Arni
@@ -11,19 +13,22 @@ Convert a GarnettFile to a Haskell option-parsing module
 
 module Text.Garnett.Writers.HaskellWriter where
 
-import Data.List
+import Control.Applicative
 import Control.Monad
 import Data.Char
-import Control.Applicative
+import Data.List
+import Data.Maybe
 import Data.String.Conversions
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
+import Options.Applicative
 import Text.Garnett.Definition
 
 
 writer :: GarnettFile -> IO String  -- should this be @Text.PrettyPrint.Free.Doc e@?
 writer gf = runQ $ (intercalate "\n" <$>) . sequence $ pprint <$$> [buildType (_mainParser gf), buildFun (_mainParser gf)]
 
+(<$$>) :: (Applicative a, Applicative b) => (x -> y) -> a (b x) -> a (b y)
 (<$$>) = fmap . fmap
 
 
@@ -59,40 +64,36 @@ buildType gparser = return $ DataD [] dataName [] [RecC dataName fields] []
 
 buildFun :: GParser -> Q Dec
 buildFun gparser = do
-    let dataName = mkName . camelizeCap . cs $ _parserName gparser
-        funName = mkName . ("parseOpt" <>) . camelizeCap . cs $ _parserName gparser
+    let name_    = camelizeCap . cs $ _parserName gparser
+        dataName = mkName name_
+        funName  = mkName . ("parseOpt" <>) $ name_
 
-        fields = map f $ _options gparser
+        fields :: [Q Exp]
+        fields | length v /= 0 = v
           where
-            f :: Option -> Exp
-            f option = error "wef"  --- (mkName . cs $ _optName option, NotStrict, g $ _input option)
+            v = map f $ _options gparser
 
-    body <- [| VarE (mkName "should_be_dataName") |]
+            f :: Option -> Q Exp
+            f option = [| argument auto $(foldApQExps $ catMaybes [_long option, _short option]) |]
+                where
+                    _long :: Option -> Maybe (Q Exp)
+                    _long = fmap (\x -> [| long $(return . VarE . mkName . cs . show $ x) |]) . _longOpt
+
+                    _short :: Option -> Maybe (Q Exp)
+                    _short = fmap (\x -> [| short $(return . VarE . mkName . show $ [x]) |]) . _shortOpt
+
+--                    _help :: Option -> Maybe (Q Exp)
+--                    _help = fmap (\x -> [| short $(return . VarE . mkName $ lkup "default" x) |]) . _optDesc
+
+    body <- [| $(return $ VarE dataName) <$> $(foldApQExps fields) |]
 
     return $ FunD funName [Clause [] (NormalB body) []]
 
 
-
-
-{-
-
-    body :: Q Exp
-    body = error "wef"  --   -- ) (VarE $ mkName "<$>")
-
-
-data Main
-    = Main {verbosity :: GHC.Types.Bool,
-            help :: GHC.Types.Bool,
-            inputFile :: ([GHC.IO.FilePath]),
-            logLevel :: GHC.Types.Bool}
-
-parseOptMain = Main <$>
-
-
--}
-
-
-
+-- | Intercalate a list of expressions with @<*>@.  TODO: find a
+-- better name, comment better.
+foldApQExps :: [Q Exp] -> Q Exp
+foldApQExps = foldr1 $ \ a b -> UInfixE <$> a <*> [| (<*>) |] <*> b
 
 camelizeCap :: String -> String
 camelizeCap "" = ""

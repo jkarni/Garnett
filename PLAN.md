@@ -7,6 +7,8 @@ General
   associative array.
 - Figure out how a parser's options interact with subparser options
     * (MF: Maybe all global options must be specified before the subparser?)
+- What about inputs that take a list of elements of different types? OITList
+  currently isn't able to handle that nicely. 
 
 Writers
 =======

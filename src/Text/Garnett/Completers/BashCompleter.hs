@@ -61,7 +61,7 @@ eachParser gp = do
 delegator :: GarnettFile -> Free ShellF ()
 delegator gf = do
     let myName = '_':(T.unpack $ gf ^. progName)
-    let pNames = fmap T.unpack $ gf ^. gParsers ^.. folded . parserName
+    let pNames = fmap T.unpack $ gf ^. mainParser . subparsers ^.. folded . parserName
     comment $ "Handles completion on subparser names, and delegates "
     comment $ "completion to the subparser completion functions."
     define myName $ do
@@ -80,7 +80,7 @@ allBash :: GarnettFile -> Free ShellF ()
 allBash gf = do
     comment $ "Completion script for " ++ (T.unpack $ gf ^. progName)
     comment $ "Generated with Garnett"
-    mapM_ eachParser (gf ^. gParsers)
+    mapM_ eachParser (gf ^. mainParser . subparsers)
     delegator gf
     -- stmt "complete -F
 

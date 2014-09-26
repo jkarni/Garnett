@@ -1,12 +1,12 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE TemplateHaskell        #-}
 {- |
     Module : Text.Garnett.Definition
     Copyright : Copyright (C) 2014 Julian K. Arni
@@ -18,22 +18,22 @@ The internal data types definitions.
 -}
 module Text.Garnett.Definition where
 
-import GHC.Generics
-import Data.Monoid
-import Data.Yaml
-import Data.Maybe
-import Data.Aeson
-import qualified Data.Text as T
-import Data.Monoid
-import Control.Applicative
-import Control.Monad
-import Control.Lens.TH
-import Control.Lens
-import Control.Lens.At
-import qualified Data.Map as Map
-import qualified Data.HashMap.Strict as H
-import Text.PrettyPrint.Free
-import GHC.TypeLits
+import           Control.Applicative
+import           Control.Lens
+import           Control.Lens.At
+import           Control.Lens.TH
+import           Control.Monad
+import           Data.Aeson
+import qualified Data.HashMap.Strict   as H
+import qualified Data.Map              as Map
+import           Data.Maybe
+import           Data.Monoid
+import           Data.Monoid
+import qualified Data.Text             as T
+import           Data.Yaml
+import           GHC.Generics
+import           GHC.TypeLits
+import           Text.PrettyPrint.Free
 
 --------------------------------------------------------------------------
 -- Types
@@ -77,13 +77,14 @@ data GParser = GParser { _parserName :: T.Text
                        , _options    :: [Option]
                        , _intro      :: Maybe (FmtMap T.Text)
                        , _seeAlso    :: Maybe T.Text
+                       , _subparsers :: [GParser]
                        } deriving (Show)
 
 $(makeLenses ''GParser)
 data GarnettFile = GarnettFile { _progName    :: T.Text
                                , _authorName  :: T.Text
                                , _authorEmail :: Maybe T.Text
-                               , _gParsers    :: [GParser]
+                               , _mainParser  :: GParser 
                                } deriving (Generic, Show)
 $(makeLenses ''GarnettFile)
 data Markup = Markup T.Text deriving (Generic)
@@ -134,13 +135,19 @@ instance FromJSON GParser where
                                    <*> v .: "options"
                                    <*> v .:? "intro"
                                    <*> v .:? "see-also"
+                                   <*> v .: "subparsers"
     parseJSON _ = mzero
 
 instance FromJSON GarnettFile where
     parseJSON (Object v) = GarnettFile <$> v .: "prog-name"
                                        <*> v .: "author"
                                        <*> v .:? "email"
-                                       <*> v .: "parsers"
+                                       <*> ( GParser <$> return "main"
+                                                     <*> v .: "options"
+                                                     <*> v .:  "intro"
+                                                     <*> v .:? "see-also"
+                                                     <*> v .: "subparsers" 
+                                           )  
     parseJSON _ = mzero
 
 --------------------------------------------------------------------------

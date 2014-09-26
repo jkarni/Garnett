@@ -84,7 +84,7 @@ $(makeLenses ''GParser)
 data GarnettFile = GarnettFile { _progName    :: T.Text
                                , _authorName  :: T.Text
                                , _authorEmail :: Maybe T.Text
-                               , _mainParser  :: GParser 
+                               , _mainParser  :: GParser
                                } deriving (Generic, Show)
 $(makeLenses ''GarnettFile)
 data Markup = Markup T.Text deriving (Generic)
@@ -147,7 +147,7 @@ instance FromJSON GarnettFile where
                                                      <*> v .:  "intro"
                                                      <*> v .:? "see-also"
                                                      <*> v .:? "subparsers" .!= []
-                                           )  
+                                           )
     parseJSON _ = mzero
 
 --------------------------------------------------------------------------

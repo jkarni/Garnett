@@ -48,7 +48,7 @@ buildType gparser = DataD [] dataName [] [RecC dataName fields] []
         g (Just OITString) = ConT ''String
         g (Just OITFile) = ConT ''FilePath
         g (Just OITDir) = ConT ''FilePath
-        g (Just OIBool) = ConT ''Bool
+        g (Just OITBool) = ConT ''Bool
         g (Just (OITList t)) = ListT  -- TODO
 
 

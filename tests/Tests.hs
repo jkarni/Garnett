@@ -10,7 +10,8 @@ import Data.Either
 import Test.Hspec
 
 import Text.Garnett.Definition
-import Text.Garnett.BashWriter
+import Text.Garnett.Completers.BashCompleter
+import Text.Garnett.Completers.ShellDSL
 import Paths_garnett
 
 

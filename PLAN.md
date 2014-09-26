@@ -3,8 +3,8 @@ Writers
 =======
 In rough order of priority:
 
-- Bash
-- Zsh
+- Bash completion
+- Zsh completion
 - Haskell
 - Python
 - Ruby
@@ -12,11 +12,11 @@ In rough order of priority:
 - Java
 - Go
 - Rust
-- Fish
-- Csh
+- Fish completion
+- Csh completion
 
 Reader
 ======
 
 Investigate the feasibility of generating a partial Garnett YAML file by
-parsing usage string. 
+parsing usage string.

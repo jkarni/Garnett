@@ -36,7 +36,7 @@ library
                      , wl-pprint-extras==3.*
                      , lens==4.4.*
                      , free==4.9.*
-                     , text==0.11.*
+                     , text
                      , bytestring==0.10.*
                      , aeson==0.6.2.1 || ==0.8.*
                      , attoparsec==0.10.* || ==0.12.1.2

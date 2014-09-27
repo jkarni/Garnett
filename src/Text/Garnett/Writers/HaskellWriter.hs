@@ -26,22 +26,29 @@ import Text.Garnett.Definition
 import qualified Data.Map as Map
 
 
-writer :: GarnettFile -> IO String  -- should this be @Text.PrettyPrint.Free.Doc e@?
-writer gf = runQ $ (intercalate "\n" <$>) . sequence $ pprint <$$> [buildType (_mainParser gf), buildFun (_mainParser gf)]
+-- * aux
 
 (<$$>) :: (Applicative a, Applicative b) => (x -> y) -> a (b x) -> a (b y)
 (<$$>) = fmap . fmap
 
+-- | Intercalate a list of expressions with @<*>@.  TODO: find a
+-- better name, comment better.
+foldApQExps :: [Q Exp] -> Q Exp
+foldApQExps = foldr1 $ \ a b -> UInfixE <$> a <*> [| (<*>) |] <*> b
 
-{-
+camelizeCap :: String -> String
+camelizeCap "" = ""
+camelizeCap (c:cs) = toUpper c : cs
 
-data GarnettOptions = Gar
+camelizeSmall :: String -> String
+camelizeSmall "" = ""
+camelizeSmall (c:cs) = toLower c : cs
 
-garnettParse :: Parser GarnettOptions
-garnettParse = GarnettOptions
 
--}
+-- * writer
 
+writer :: GarnettFile -> IO String  -- should this be @Text.PrettyPrint.Free.Doc e@?
+writer gf = runQ $ (intercalate "\n" <$>) . sequence $ pprint <$$> [buildType (_mainParser gf), buildFun (_mainParser gf)]
 
 buildType :: GParser -> Q Dec
 buildType gparser = return $ DataD [] dataName [] [RecC dataName fields] []
@@ -99,17 +106,3 @@ buildFun gparser = do
     body <- [| $(return $ VarE dataName) <$> $(foldApQExps fields) |]
 
     return $ FunD funName [Clause [] (NormalB body) []]
-
-
--- | Intercalate a list of expressions with @<*>@.  TODO: find a
--- better name, comment better.
-foldApQExps :: [Q Exp] -> Q Exp
-foldApQExps = foldr1 $ \ a b -> UInfixE <$> a <*> [| (<*>) |] <*> b
-
-camelizeCap :: String -> String
-camelizeCap "" = ""
-camelizeCap (c:cs) = toUpper c : cs
-
-camelizeSmall :: String -> String
-camelizeSmall "" = ""
-camelizeSmall (c:cs) = toLower c : cs

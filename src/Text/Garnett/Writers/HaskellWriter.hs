@@ -34,7 +34,7 @@ import qualified Data.Map as Map
 -- | Intercalate a list of expressions with @<*>@.  TODO: find a
 -- better name, comment better.
 foldApQExps :: [Q Exp] -> Q Exp
-foldApQExps = foldr1 $ \ a b -> UInfixE <$> a <*> [| (<*>) |] <*> b
+foldApQExps l@(_:_) = foldr1 (\ a b -> UInfixE <$> a <*> [| (<*>) |] <*> b) l
 
 camelizeCap :: String -> String
 camelizeCap "" = ""

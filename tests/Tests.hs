@@ -1,18 +1,21 @@
 module Main where
 
-import Control.Monad
-import qualified Data.Map as Map
+import           Control.Monad
+import           Data.Aeson
 import qualified Data.ByteString.Lazy as BS
-import Data.Yaml
-import Data.Aeson
-import Data.Maybe
-import Data.Either
-import Test.Hspec
+import           Data.Either
+import qualified Data.Map as Map
+import           Data.Maybe
+import           Data.Yaml
+import           Test.Hspec
 
-import Text.Garnett.Definition
-import Text.Garnett.Completers.BashCompleter
-import Text.Garnett.Completers.ShellDSL
-import Paths_garnett
+import           Text.Garnett.Definition
+import           Text.Garnett.Completers.BashCompleter
+import           Text.Garnett.Completers.ShellDSL
+import           Text.Garnett.Writers.HaskellWriter
+
+import           Writers.HaskellWriter
+import           Paths_garnett
 
 
 main :: IO ()

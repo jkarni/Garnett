@@ -23,6 +23,7 @@ import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import Options.Applicative
 import Text.Garnett.Definition
+import qualified Data.Map as Map
 
 
 writer :: GarnettFile -> IO String  -- should this be @Text.PrettyPrint.Free.Doc e@?
@@ -74,16 +75,26 @@ buildFun gparser = do
             v = map f $ _options gparser
 
             f :: Option -> Q Exp
-            f option = [| argument auto $(foldApQExps $ catMaybes [_long option, _short option]) |]
+            f option = [| argument auto $(foldApQExps _all) |]
                 where
+                    _all :: [Q Exp]
+                    _all = catMaybes
+                        [ _long option
+                        , _short option
+                        , _help option
+                        ]
+
                     _long :: Option -> Maybe (Q Exp)
                     _long = fmap (\x -> [| long $(return . VarE . mkName . cs . show $ x) |]) . _longOpt
 
                     _short :: Option -> Maybe (Q Exp)
                     _short = fmap (\x -> [| short $(return . VarE . mkName . show $ [x]) |]) . _shortOpt
 
---                    _help :: Option -> Maybe (Q Exp)
---                    _help = fmap (\x -> [| short $(return . VarE . mkName $ lkup "default" x) |]) . _optDesc
+                    _help :: Option -> Maybe (Q Exp)
+                    _help = fmap (\x -> [| short $(return . VarE . mkName . q $ x) |]) . _optDesc
+                        where
+                            q :: FmtMap ST -> String
+                            q x = case Map.lookup defaultFmt x of Just desc -> show desc
 
     body <- [| $(return $ VarE dataName) <$> $(foldApQExps fields) |]
 

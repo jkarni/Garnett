@@ -11,12 +11,6 @@ options:
       long: verbose
       description:
         default: something
-    - name: help
-      short: h
-      long: help
-      description:
-        default: Print help message and exit
-        cli: Print this help message and exit
     - name: inputFile
       short: i
       long: input
@@ -27,7 +21,7 @@ options:
     - name: logLevel
       short: l
       long: log
-      arg: int
+      input: int
       description:
         default: Set the log level
         man: >

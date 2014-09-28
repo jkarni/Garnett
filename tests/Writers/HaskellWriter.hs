@@ -25,7 +25,7 @@ entryPoint mn = do
   when (verbosity mn) $ putStrLn "Verbose!"
   putStrLn "Input files:"
   mapM_ (\x -> putStrLn ('\t':x)) (inputFile mn)
-  when (logLevel mn) $ putStrLn "Logging!"
+  putStrLn $ "Log level: " ++ show (logLevel mn)
 
 
 localMain :: IO ()

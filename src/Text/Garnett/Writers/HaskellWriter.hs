@@ -36,28 +36,22 @@ import           Text.Garnett.Definition
 ---
 mkOptParser :: FilePath -> Q [Dec]
 mkOptParser fp = do
-  f <- runIO $ decodeFileEither fp 
-  case f of 
+  f <- runIO $ decodeFileEither fp
+  case f of
     Left err -> error $ show err
     Right gf -> splice gf
-                      
 
 
 splice :: GarnettFile -> Q [Dec]
 splice gf = sequence [buildType (_mainParser gf), buildFun (_mainParser gf)]
 
-mkDataName :: GParser -> Name                
-mkDataName gp = mkName . (++ "Ty") . titleCase . cs $ _parserName gp
-
-mkFunName :: GParser -> Name                
-mkFunName gp = mkName . ("parseOpt" ++) . cs $ _parserName gp
 
 -- | Builds a data type declaration, with a single constructor and multiple
 -- records, for a parser.
 buildType :: GParser -> Q Dec
 buildType gparser = return $ DataD [] dataName [] [RecC dataName fields] []
   where
-    dataName = mkDataName gparser 
+    dataName = mkDataName gparser
     fields = map f $ _options gparser
       where
         f :: Option -> (Name, Strict, Type)
@@ -76,10 +70,9 @@ buildType gparser = return $ DataD [] dataName [] [RecC dataName fields] []
 
 buildFun :: GParser -> Q Dec
 buildFun gparser = do
-    let 
-        dataName = mkDataName gparser 
-        funName  = mkFunName gparser 
-        -- typeAnnot = SigE <$> varE funName <*> (AppT <$> (conT $ mkName "Parser") <*> (conT dataName))
+    let
+        dataName = mkDataName gparser
+        funName  = mkFunName gparser
 
         fields :: [Q Exp]
         fields | length v /= 0 = v
@@ -87,13 +80,13 @@ buildFun gparser = do
             v = map f $ _options gparser
 
             f :: Option -> Q Exp
-            f opt = [| option auto $(foldApQExps (varE $ mkName "<>") _all) |]
+            f opt = [| option auto $(foldrQExps (varE $ mkName "<>") _all) |]
                 where
                     _all :: [Q Exp]
                     _all = catMaybes
                         [ _long opt
                         , _short opt
-                        , _help opt
+                        -- , _help opt -- TODO
                         ]
                     mkStr :: String -> Q Exp
                     mkStr = return . LitE . StringL
@@ -107,13 +100,16 @@ buildFun gparser = do
                     _short :: Option -> Maybe (Q Exp)
                     _short = fmap (\x -> [| short $(mkChar x) |]) . _shortOpt
 
+                    -- TODO: switch from 'long' to something appropriate
+                    {-
                     _help :: Option -> Maybe (Q Exp)
-                    _help = fmap (\x -> [| long $(mkStr $ q x) |]) . _optDesc   -- TODO: switch from 'long' to 'desc'
+                    _help = fmap (\x -> [| long $(mkStr $ q x) |]) . _optDesc
                         where
                             q :: FmtMap ST -> String
                             q x = case Map.lookup defaultFmt x of Just desc -> cs desc
+                    -}
 
-    body <- [| $(return $ ConE dataName) <$> $(foldApQExps (varE $ mkName "<*>") fields) |]
+    body <- [| $(mkApplicative ((conE dataName):fields)) |]
 
     return $ FunD funName [Clause [] (NormalB body) []]
 
@@ -124,9 +120,24 @@ buildFun gparser = do
 (<$$>) :: (Applicative a, Applicative b) => (x -> y) -> a (b x) -> a (b y)
 (<$$>) = fmap . fmap
 
--- | Intercalate a list of expressions with an infix operator.
-foldApQExps :: Q Exp -> [Q Exp] -> Q Exp
-foldApQExps infx l@(_:_) = foldr1 (\ a b -> UInfixE <$> a <*> infx <*> b) l
+-- | Intercalate a list of expressions with an infix operator (right-association).
+foldrQExps :: Q Exp -> [Q Exp] -> Q Exp
+foldrQExps infx = foldr1 (\ a b -> UInfixE <$> a <*> infx <*> b)
+
+-- | Intercalate a list of expressions with an infix operator (left-association).
+foldlQExps :: Q Exp -> [Q Exp] -> Q Exp
+foldlQExps infx = foldl1 (\ a b -> UInfixE <$> a <*> infx <*> b)
+
+-- | Put a list of expressions together using applicative style.
+-- E.g.:
+--   > x <- runQ (mkApplicative [ [| (+) |], [| Just 4 |], [| Just 3 |] ] )
+--   > pprint x
+--   >> (+) <$> Just 4 <*> Just 3
+mkApplicative :: [Q Exp] -> Q Exp
+mkApplicative (e:se:exps) = foldlQExps (varE $ mkName "<*>") (inFmap:exps)
+   where
+     inFmap :: Q Exp
+     inFmap = UInfixE <$> e <*> (varE $ mkName "<$>") <*> se
 
 titleCase :: String -> String
 titleCase "" = ""
@@ -135,6 +146,12 @@ titleCase (c:cs) = toUpper c : cs
 untitleCase :: String -> String
 untitleCase "" = ""
 untitleCase (c:cs) = toLower c : cs
+
+mkDataName :: GParser -> Name
+mkDataName gp = mkName . (++ "Ty") . titleCase . cs $ _parserName gp
+
+mkFunName :: GParser -> Name
+mkFunName gp = mkName . ("parseOpt" ++) . cs $ _parserName gp
 --------------
 -- for ghci --
 --------------
@@ -142,5 +159,5 @@ untitleCase (c:cs) = toLower c : cs
 ios :: IO String
 ios = decodeFile "example.yaml" >>= writer . fromJust
 
-writer :: GarnettFile -> IO String  
-writer gf = runQ $ pprint <$> splice gf 
+writer :: GarnettFile -> IO String
+writer gf = runQ $ pprint <$> splice gf

@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE ViewPatterns         #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
@@ -14,15 +15,13 @@ Convert a GarnettFile to a Haskell option-parsing module
 module Text.Garnett.Writers.HaskellWriter where
 
 import           Control.Applicative
-import           Control.Monad
 import           Data.Char
-import           Data.List
-import qualified Data.Map as Map
 import           Data.Maybe
+import qualified Data.Map as Map
+import qualified Data.Text as T
 import           Data.Yaml hiding (Parser)
 import           Data.String.Conversions
 import           Language.Haskell.TH
-import           Language.Haskell.TH.Syntax
 import           Options.Applicative
 import           Text.Garnett.Definition
 
@@ -55,7 +54,7 @@ buildType gparser = return $ DataD [] dataName [] [RecC dataName fields] []
     fields = map f $ _options gparser
       where
         f :: Option -> (Name, Strict, Type)
-        f option = (mkName . cs $ _optName option, NotStrict, g $ _input option)
+        f opt = (mkName . cs $ _optName opt, NotStrict, g $ _input opt)
 
         g :: Maybe OptionInputTy -> Type
         g Nothing = ConT ''Bool
@@ -68,6 +67,7 @@ buildType gparser = return $ DataD [] dataName [] [RecC dataName fields] []
         g (Just (OITList t)) = AppT ListT (g (Just t))
 
 
+-- This function could use some cleaning up
 buildFun :: GParser -> Q Dec
 buildFun gparser = do
     let
@@ -75,41 +75,43 @@ buildFun gparser = do
         funName  = mkFunName gparser
 
         fields :: [Q Exp]
-        fields | length v /= 0 = v
+        fields | not (null v) = v
+               | otherwise    = error "fields: expecting non-empty list"
           where
             v = map f $ _options gparser
 
             f :: Option -> Q Exp
-            f opt = [| option auto $(foldrQExps (varE $ mkName "<>") _all) |]
+            f opt | _input opt == Nothing      = [| switch $(foldrQExps (varE $ mkName "<>") _all) |]
+                  | _input opt == Just OITBool = [| switch $(foldrQExps (varE $ mkName "<>") _all) |]
+                  | otherwise                  = [| option auto $(foldrQExps (varE $ mkName "<>") _all) |]
                 where
                     _all :: [Q Exp]
-                    _all = catMaybes
-                        [ _long opt
-                        , _short opt
-                        -- , _help opt -- TODO
-                        ]
+                    _all = catMaybes [ _long  opt
+                                     , _short opt
+                                     , _help  opt
+                                     ]
+
                     mkStr :: String -> Q Exp
                     mkStr = return . LitE . StringL
 
                     mkChar :: Char -> Q Exp
                     mkChar = return . LitE . CharL
 
-                    _long :: Option -> Maybe (Q Exp)
+                    _long, _short, _help :: Option -> Maybe (Q Exp)
                     _long = fmap (\x -> [| long $(mkStr $ cs x) |]) . _longOpt
 
-                    _short :: Option -> Maybe (Q Exp)
                     _short = fmap (\x -> [| short $(mkChar x) |]) . _shortOpt
 
-                    -- TODO: switch from 'long' to something appropriate
-                    {-
-                    _help :: Option -> Maybe (Q Exp)
-                    _help = fmap (\x -> [| long $(mkStr $ q x) |]) . _optDesc
+                    _help o = do
+                      mdesc <- _optDesc o
+                      case q mdesc of
+                               Just x -> Just [| help $(mkStr x) |]
+                               Nothing -> Nothing
                         where
-                            q :: FmtMap ST -> String
-                            q x = case Map.lookup defaultFmt x of Just desc -> cs desc
-                    -}
+                            q :: FmtMap T.Text -> Maybe String
+                            q x = T.unpack <$> (Map.lookup defaultFmt x <|> Map.lookup cliFmt x)
 
-    body <- [| $(mkApplicative ((conE dataName):fields)) |]
+    body <- [| $(mkApplicative (conE dataName:fields)) |]
 
     return $ FunD funName [Clause [] (NormalB body) []]
 
@@ -120,6 +122,8 @@ buildFun gparser = do
 (<$$>) :: (Applicative a, Applicative b) => (x -> y) -> a (b x) -> a (b y)
 (<$$>) = fmap . fmap
 
+cliFmt :: Fmt
+cliFmt = Fmt "cli"
 -- | Intercalate a list of expressions with an infix operator (right-association).
 foldrQExps :: Q Exp -> [Q Exp] -> Q Exp
 foldrQExps infx = foldr1 (\ a b -> UInfixE <$> a <*> infx <*> b)
@@ -134,18 +138,20 @@ foldlQExps infx = foldl1 (\ a b -> UInfixE <$> a <*> infx <*> b)
 --   > pprint x
 --   >> (+) <$> Just 4 <*> Just 3
 mkApplicative :: [Q Exp] -> Q Exp
+mkApplicative [e,ex]      = UInfixE <$> e <*> varE (mkName "<$>") <*> ex
 mkApplicative (e:se:exps) = foldlQExps (varE $ mkName "<*>") (inFmap:exps)
    where
      inFmap :: Q Exp
-     inFmap = UInfixE <$> e <*> (varE $ mkName "<$>") <*> se
+     inFmap = UInfixE <$> e <*> varE (mkName "<$>") <*> se
+mkApplicative _           = error "mkApplicative: requires at least two list elements"
 
 titleCase :: String -> String
 titleCase "" = ""
-titleCase (c:cs) = toUpper c : cs
+titleCase (c:cs') = toUpper c : cs'
 
 untitleCase :: String -> String
 untitleCase "" = ""
-untitleCase (c:cs) = toLower c : cs
+untitleCase (c:cs') = toLower c : cs'
 
 mkDataName :: GParser -> Name
 mkDataName gp = mkName . (++ "Ty") . titleCase . cs $ _parserName gp

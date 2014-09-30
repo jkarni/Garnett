@@ -15,7 +15,6 @@ module Writers.HaskellWriter where
 import Options.Applicative
 import Control.Monad
 
-import Text.Garnett.Definition
 import Text.Garnett.Writers.HaskellWriter
 
 $(mkOptParser "example.yaml")

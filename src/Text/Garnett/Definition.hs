@@ -21,20 +21,14 @@ module Text.Garnett.Definition where
 
 import           Control.Applicative
 import           Control.Lens
-import           Control.Lens.At
-import           Control.Lens.TH
 import           Control.Monad
 import           Data.Aeson
-import qualified Data.HashMap.Strict   as H
 import qualified Data.Map              as Map
 import           Data.Maybe
-import           Data.Monoid
-import           Data.Monoid
+import           Data.Monoid           ()
 import qualified Data.Text             as T
-import           Data.Yaml
 import           Data.Vector
 import           GHC.Generics
-import           GHC.TypeLits
 import           Text.PrettyPrint.Free
 
 --------------------------------------------------------------------------

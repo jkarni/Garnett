@@ -2,6 +2,7 @@
 {-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE ViewPatterns         #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE RecordWildCards      #-}
 {- |
     Module : Text.Garnett.Writers.HaskellWriter
     Copyright : Copyright (C) 2014 Julian K. Arni
@@ -22,6 +23,7 @@ import qualified Data.Text as T
 import           Data.Yaml hiding (Parser)
 import           Data.String.Conversions
 import           Language.Haskell.TH
+import           Language.Haskell.TH.Syntax
 import           Options.Applicative
 import           Text.Garnett.Definition
 
@@ -42,29 +44,53 @@ mkOptParser fp = do
 
 
 splice :: GarnettFile -> Q [Dec]
-splice gf = sequence [buildType (_mainParser gf), buildFun (_mainParser gf)]
+splice gf = sequence $ (buildFun $ _mainParser gf):(return <$> (buildTypeR $ _mainParser gf))
 
+buildTypeR :: GParser -> [Dec]
+buildTypeR m@(GParser { _subparsers = [], .. }) = buildType m
+buildTypeR m@(GParser { .. }                 )  = concatMap buildTypeR _subparsers
+                                               ++ buildType m
 
 -- | Builds a data type declaration, with a single constructor and multiple
 -- records, for a parser.
-buildType :: GParser -> Q Dec
-buildType gparser = return $ DataD [] dataName [] [RecC dataName fields] []
+buildType :: GParser -> [Dec]
+buildType gparser = catMaybes [ Just (DataD [] dataName [] [RecC dataName fields] [])
+                              , mkSubparserType $ _subparsers gparser
+                              ]
   where
-    dataName = mkDataName gparser
-    fields = map f $ _options gparser
-      where
-        f :: Option -> (Name, Strict, Type)
-        f opt = (mkName . cs $ _optName opt, NotStrict, g $ _input opt)
+    g :: Maybe OptionInputTy -> Type
+    g Nothing            = ConT ''Bool
+    g (Just OITInt)      = ConT ''Int
+    g (Just OITFloat)    = ConT ''Float
+    g (Just OITString)   = ConT ''String
+    g (Just OITFile)     = ConT ''FilePath
+    g (Just OITDir)      = ConT ''FilePath
+    g (Just OITBool)     = ConT ''Bool
+    g (Just (OITList t)) = AppT ListT (g (Just t))
 
-        g :: Maybe OptionInputTy -> Type
-        g Nothing = ConT ''Bool
-        g (Just OITInt) = ConT ''Int
-        g (Just OITFloat) = ConT ''Float
-        g (Just OITString) = ConT ''String
-        g (Just OITFile) = ConT ''FilePath
-        g (Just OITDir) = ConT ''FilePath
-        g (Just OITBool) = ConT ''Bool
-        g (Just (OITList t)) = AppT ListT (g (Just t))
+    f :: Option -> (Name, Strict, Type)
+    f opt = (mkName . cs $ _optName opt, NotStrict, g $ _input opt)
+
+    subparserName, dataName :: Name
+    subparserName = mkName $ "Subparsers" ++ T.unpack (_parserName gparser)
+    dataName = mkDataName gparser
+
+    mkSubparserType :: [GParser] -> Maybe Dec
+    mkSubparserType []  = Nothing
+    mkSubparserType gps = Just $
+       DataD []
+             subparserName
+             []
+             (map (\gp -> NormalC (mkName $ ("Mk" ++) . T.unpack $ _parserName gp)
+                    [(NotStrict, ConT $ mkDataName gp)]) gps)
+             []
+
+    subparserField :: [GParser] -> Maybe VarStrictType
+    subparserField [] = Nothing
+    subparserField _  = Just (mkName "subparsers", NotStrict, ConT subparserName)
+
+    fields = map f (_options gparser) ++ maybeToList (subparserField $ _subparsers gparser)
+
 
 
 -- This function could use some cleaning up
@@ -145,19 +171,19 @@ mkApplicative (e:se:exps) = foldlQExps (varE $ mkName "<*>") (inFmap:exps)
      inFmap = UInfixE <$> e <*> varE (mkName "<$>") <*> se
 mkApplicative _           = error "mkApplicative: requires at least two list elements"
 
-titleCase :: String -> String
-titleCase "" = ""
-titleCase (c:cs') = toUpper c : cs'
-
-untitleCase :: String -> String
-untitleCase "" = ""
-untitleCase (c:cs') = toLower c : cs'
-
 mkDataName :: GParser -> Name
-mkDataName gp = mkName . (++ "Ty") . titleCase . cs $ _parserName gp
+mkDataName gp = case T.unpack (_parserName gp) of
+    ""      -> mkName "Ty"
+    (c:cs') -> mkName $ (++ "Ty") $ map san $ toUpper c : cs'
+  where san '-' = '_'
+        san x   = x
 
 mkFunName :: GParser -> Name
-mkFunName gp = mkName . ("parseOpt" ++) . cs $ _parserName gp
+mkFunName gp = case T.unpack (_parserName gp) of
+    "" -> mkName "opt"
+    x  -> mkName $ ("opt" ++) $ map san x
+  where san '-' = '_'
+        san x   = x
 --------------
 -- for ghci --
 --------------
